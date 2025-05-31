@@ -252,6 +252,13 @@ class MainWindow(QMainWindow):
         action3.triggered.connect(self.clear)
         find_people_menu.addAction(action4)
         action4.triggered.connect(self.close)
+
+        custom_peole_menu = self.menu_bar.addMenu("常查询人员")
+        people1  = QAction("曾政", self)
+        people2  = QAction("张嘉奇", self)
+        people3  = QAction("温炳兴", self)
+        people4  = QAction("宋益凡", self)
+        custom_peole_menu.addActions([people1, people2, people3, people4])
         layout.addWidget(self.menu_bar)
 
         # 欢迎窗口
@@ -277,6 +284,11 @@ class MainWindow(QMainWindow):
         layout.addStretch() 
 
         self._init_left_content()
+        from functools import partial
+
+        for people in [people1, people2, people3, people4]:
+            people.triggered.connect(partial(self.get_people_information, people.text()))
+
     def _init_left_content(self):
         
         username_layout = QHBoxLayout()
@@ -318,8 +330,8 @@ class MainWindow(QMainWindow):
         headless_layout = QHBoxLayout()
         self.headless_combobox = QComboBox()
         self.headless_combobox.setStyleSheet("font-size: 15px;")
-        self.headless_combobox.addItem("无头模式")
         self.headless_combobox.addItem("有头模式")
+        self.headless_combobox.addItem("无头模式")
         headless_layout.addWidget(self.headless_combobox)
         
 
@@ -416,7 +428,24 @@ class MainWindow(QMainWindow):
             pass
 
     def clear(self):
+        self.username_input.clear()
+        self.password_input.clear()
         self.show_result.clear()
+
+    def get_people_information(self, name):
+
+        if name == "曾政":
+            self.username_input.setText("2215113116")
+            self.password_input.setText("light004")
+        elif name == "张嘉奇":
+            self.username_input.setText("2215113155")
+            self.password_input.setText("276672")
+        elif name == "温炳兴":
+            self.username_input.setText("2215113148")
+            self.password_input.setText("182116")
+        elif name == "宋益凡":
+            self.username_input.setText("2215113140")
+            self.password_input.setText("284310")
 
 
 class urpThread(QThread):
