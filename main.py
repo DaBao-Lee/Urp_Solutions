@@ -2,10 +2,10 @@
 import os
 import pandas as pd
 from sys import argv
-from time import sleep
 from ddddocr import DdddOcr
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
+from time import sleep, time
 from PyQt5.QtWidgets import *
 from selenium.webdriver import Edge
 from selenium.webdriver.common.by import By
@@ -108,7 +108,7 @@ class urp_tools:
             print("查询失败,请重试或检查是否评估。")
         else:
             # self.show_credit()
-            print("查询完毕。")
+            # print("查询完毕。")
             text +=  "查询完毕。\n"
         
         return text
@@ -147,15 +147,15 @@ class urp_tools:
                     if a[i].text[-1] == "是":
                         n += 1
             if n == len(a) + len(b) and n != 0 :
-                print("评估已完成。")
+                # print("评估已完成。")
                 return_text += "评估已完成。\n"
             else:
                 A = []
-                for i in range(0, int(len(a) + len(b)+2)):
+                for i in range(0, int(len(a) + len(b)+1)):
                     self.driver.execute_script(f"window.open('{self.link}jxpgXsAction.do?oper=listWj&yzxh={self.zh}', '_blank');")
                     A.append(self.driver.window_handles)
                 sleep(3)
-                for k in range(0, int(len(a) + len(b)+2)):
+                for k in range(0, int(len(a) + len(b)+1)):
                     try:
                         self.driver.switch_to.window(self.driver.window_handles[k])
                         ll = self.driver.find_elements(By.TAG_NAME,"img")
@@ -189,16 +189,21 @@ class urp_tools:
 class SearchDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
+
         self.setWindowTitle("查询学生信息")
-        self.setModal(True)  # 设置为模态窗口
+        self.setGeometry(700, 250, 500, 50)
+        self.setModal(False)  # 设置为模态窗口
         self.init_ui()
 
     def init_ui(self):
-        layout = QVBoxLayout(self)
+        layout = QHBoxLayout(self)
 
         # 学号输入
         self.student_id_input = QLineEdit()
         self.student_id_input.setPlaceholderText("请输入姓名")
+
+        self.check_button = QCheckBox("自动填入")
+        self.check_button.setChecked(True)
 
         # 查询按钮
         btn_layout = QHBoxLayout()
@@ -210,6 +215,7 @@ class SearchDialog(QDialog):
         btn_layout.addWidget(self.cancel_button)
 
         layout.addWidget(self.student_id_input)
+        layout.addWidget(self.check_button)
         layout.addLayout(btn_layout)
 
         # 绑定按钮事件
@@ -219,12 +225,15 @@ class SearchDialog(QDialog):
     def get_student_id(self):
         return self.student_id_input.text()
     
+    def get_check(self):
+        return self.check_button.isChecked()
+    
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
     
         self.setWindowTitle("紫金URP查询助手")
-        self.setGeometry(1300, 150, 480, 800)
+        self.setGeometry(700, 350, 470, 300)
         self.setWindowIcon(QIcon("tool.png"))
         self.setStyleSheet("""
         QMainWindow {
@@ -261,14 +270,6 @@ class MainWindow(QMainWindow):
         custom_peole_menu.addActions([people1, people2, people3, people4])
         layout.addWidget(self.menu_bar)
 
-        # 欢迎窗口
-        welcome_layout = QHBoxLayout()
-        welcome_label = QLabel("欢迎使用紫金URP查询助手")
-        welcome_label.setStyleSheet("color: black ;font-size: 25px; font-family: '华文中宋';")
-        welcome_label.setFixedHeight(50)
-        welcome_label.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
-        welcome_layout.addWidget(welcome_label)
-        layout.addLayout(welcome_layout)
 
         # 下半窗口
         self.sub_layout = QHBoxLayout()
@@ -299,7 +300,7 @@ class MainWindow(QMainWindow):
         self.username_input = QLineEdit()
         self.username_input.setStyleSheet(
             """
-            font-size: 20px; font-family: '华文中宋'; border:none; outline: none;
+            font-size: 20px; font-family: '宋体'; border:none; outline: none;
             border-bottom: 2px solid red; border-radius: 2px;
             """
         )
@@ -316,7 +317,7 @@ class MainWindow(QMainWindow):
         self.password_input = QLineEdit()
         self.password_input.setStyleSheet(
             """
-            font-size: 10px; font-family: '华文中宋'; border:none; outline: none;
+            font-size: 12px; font-family: '华文中宋'; border:none; outline: none;
             border-bottom: 2px solid red; border-radius: 2px; letter-spacing: 3px;
             """
         )   
@@ -330,8 +331,8 @@ class MainWindow(QMainWindow):
         headless_layout = QHBoxLayout()
         self.headless_combobox = QComboBox()
         self.headless_combobox.setStyleSheet("font-size: 15px;")
-        self.headless_combobox.addItem("有头模式")
         self.headless_combobox.addItem("无头模式")
+        self.headless_combobox.addItem("有头模式")
         headless_layout.addWidget(self.headless_combobox)
         
 
@@ -356,7 +357,7 @@ class MainWindow(QMainWindow):
 
         self.show_result = QTextEdit("")
         self.show_result_layout = QVBoxLayout()
-        self.show_result.setMinimumSize(480, 600)
+        self.show_result.setMinimumSize(470, 250)
         self.show_result.setAlignment(Qt.AlignTop | Qt.AlignLeft)
         self.show_result_layout.addWidget(self.show_result)
         self.show_result.setStyleSheet("font-size: 15px; font-family: '华文中宋'; border: 2px solid rgba(0, 0, 0, .3); border-radius: 5px;")
@@ -415,17 +416,17 @@ class MainWindow(QMainWindow):
         self.show_result.setText("\n".join(df['姓名']))
     
     def get_specific_information(self):
-        self.show_result.clear()
-        df = pd.read_excel('./2022级学生信息.xlsx')
-        dialog = SearchDialog(self)
-        dialog.exec_()
-        name = dialog.get_student_id()
-        try:
-            index = list(df['姓名']).index(name)
-            text = '*\t{:>8}'.format(df['姓名'][index]) + '\t' + str(df['学号'][index]) + '\t' + str(df['身份证'][index][-6:]) + '*'.center(10)
-            self.show_result.append(text)
-        except Exception as e:
-            pass
+        
+        self.search_thread = searchThread(self)
+        self.search_thread.start()
+        self.search_thread.process.connect(self.show_result.clear)
+        self.search_thread.info.connect(self.replace)
+        self.search_thread.finished.connect(self.show_text)
+
+    def replace(self, info):
+
+        self.username_input.setText(info[0])
+        self.password_input.setText(info[1])
 
     def clear(self):
         self.username_input.clear()
@@ -448,6 +449,36 @@ class MainWindow(QMainWindow):
             self.password_input.setText("284310")
 
 
+class searchThread(QThread):
+
+    process = pyqtSignal()
+    info = pyqtSignal(tuple)
+    finished = pyqtSignal(str)
+
+    def __init__(self, parent=None):
+        super().__init__()
+
+        self.text = ""
+        self.diag = SearchDialog(parent)
+        self.diag.show()
+
+    def run(self):
+
+        df = pd.read_excel('./2022级学生信息.xlsx')
+        
+        try:
+            self.diag.exec_()
+            name = self.diag.get_student_id()
+            index = list(df['姓名']).index(name)
+            self.text += '*\t{:>8}'.format(df['姓名'][index])+'\t' + str(df['学号'][index])+'\t'+str(df['身份证'][index][-6:])+'*'.center(10)
+            self.process.emit()
+            if self.diag.get_check():
+                self.info.emit((str(df['学号'][index]), str(df['身份证'][index][-6:])))
+        except Exception as e:
+            pass
+        
+        self.finished.emit(self.text)
+
 class urpThread(QThread):
     
     process = pyqtSignal(str)
@@ -464,6 +495,7 @@ class urpThread(QThread):
     
     def run(self):
 
+        now_time = time()
         up = urp_tools(self.zh, self.mm, self.mode, self.link)
 
         up.offline_preprocess()
@@ -474,8 +506,10 @@ class urpThread(QThread):
         self.process.emit(self.text)
         self.text = up.show_credit()
         self.process.emit(self.text)
-
+        new_time = time()
+        self.process.emit("\n耗时：%.2f秒"%(new_time-now_time))
         self.finished.emit()
+        
 
 app = QApplication(argv)
 
