@@ -1,15 +1,15 @@
 
-import os
-import pandas as pd
 from sys import argv
+from os.path import exists
 from ddddocr import DdddOcr
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
 from time import sleep, time
-from PyQt5.QtWidgets import *
+from PyQt5.QtGui import QIcon
 from selenium.webdriver import Edge
+from pandas import read_excel, read_html
 from selenium.webdriver.common.by import By
+from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from selenium.webdriver.edge.options import Options
+from PyQt5.QtWidgets import QWidget, QMainWindow, QLabel, QAction, QApplication, QHBoxLayout, QLineEdit, QDialog, QVBoxLayout, QPushButton, QCheckBox, QMenuBar, QTextEdit, QComboBox
  
 class urp_tools:
     
@@ -87,7 +87,7 @@ class urp_tools:
         text = ""
         self.driver.get(f"{self.link}gradeLnAllAction.do?type=ln&oper=qbinfo&lnxndm=2023-2024学年秋(两学期)#qb_2023-2024学年秋(两学期)")
         try:
-            dd = pd.read_html(str(self.driver.page_source)) #4 10 16
+            dd = read_html(str(self.driver.page_source)) #4 10 16
             kc,xf,cj = [], [], []
             for i in range(4,len(dd),6):
                 kc.append(dd[i]['课程名'].values)
@@ -118,7 +118,7 @@ class urp_tools:
         
         text = ""
         self.driver.get(f"{self.link}/gradeLnAllAction.do?oper=queryXwjd")
-        ss = pd.read_html(self.driver.page_source)[8][4:]     
+        ss = read_html(self.driver.page_source)[8][4:]     
         xn,xw = ss['学年学期'].values, ss['学位绩'].values
         # print("学年学期" + "\t"*7  + "学位绩")
         for i in range(1,len(xn)):
@@ -330,10 +330,15 @@ class MainWindow(QMainWindow):
 
         headless_layout = QHBoxLayout()
         self.headless_combobox = QComboBox()
+        self.headless_combobox.setMinimumWidth(390)
         self.headless_combobox.setStyleSheet("font-size: 15px;")
         self.headless_combobox.addItem("无头模式")
         self.headless_combobox.addItem("有头模式")
         headless_layout.addWidget(self.headless_combobox)
+
+        self.evaulate_button = QCheckBox("完成评估")
+        self.evaulate_button.setChecked(True)
+        headless_layout.addWidget(self.evaulate_button)
         
 
         self.login_button = QPushButton("一键查询")
@@ -349,6 +354,7 @@ class MainWindow(QMainWindow):
         self.left_layout.addLayout(headless_layout)
         self.left_layout.addSpacing(2)
         self.left_layout.addWidget(self.login_button)
+
         
         self.show_tips = QLabel("处理结果显示在这里...")
         self.show_tips.setStyleSheet("font-size: 16px; font-family: '华文中宋';")
@@ -366,7 +372,7 @@ class MainWindow(QMainWindow):
 
         self.login_button.clicked.connect(self.process)
 
-        if os.path.exists("./user.txt"):
+        if exists("./user.txt"):
             with open("./user.txt", "r") as f:
                 username = f.readline().strip()
                 password = f.readline().strip()
@@ -393,10 +399,12 @@ class MainWindow(QMainWindow):
             f.write(self.username_input.text()+"\n")
             f.write(self.password_input.text())
 
+        need_evaluate = True if self.evaulate_button.isChecked() else False
+
         if self.headless_combobox.currentText() == "无头模式":
-            self.urp_thread = urpThread(self.username_input.text(), self.password_input.text(),mode="--headless",link="https://223.112.21.198:6443/7b68f983/")
+            self.urp_thread = urpThread(self.username_input.text(), self.password_input.text(),mode="--headless",link="https://223.112.21.198:6443/7b68f983/", need_evaluate=need_evaluate)
         else:
-            self.urp_thread = urpThread(self.username_input.text(), self.password_input.text(),mode="",link="https://223.112.21.198:6443/7b68f983/")
+            self.urp_thread = urpThread(self.username_input.text(), self.password_input.text(),mode="",link="https://223.112.21.198:6443/7b68f983/", need_evaluate=need_evaluate)
             self.show_result.append("可视化查询过程...")
         self.urp_thread.start()
 
@@ -411,7 +419,7 @@ class MainWindow(QMainWindow):
 
     def get_all_name(self):
         
-        df = pd.read_excel('./2022级学生信息.xlsx')
+        df = read_excel('./2022级学生信息.xlsx')
         self.show_result.clear()
         self.show_result.setText("\n".join(df['姓名']))
     
@@ -464,7 +472,7 @@ class searchThread(QThread):
 
     def run(self):
 
-        df = pd.read_excel('./2022级学生信息.xlsx')
+        df = read_excel('./2022级学生信息.xlsx')
         
         try:
             self.diag.exec_()
@@ -484,13 +492,14 @@ class urpThread(QThread):
     process = pyqtSignal(str)
     finished = pyqtSignal()
 
-    def __init__(self, zh, mm, mode, link):
+    def __init__(self, zh, mm, mode, link, need_evaluate=True):
         super().__init__()
 
         self.zh = zh
         self.mm = mm
         self.mode = mode
         self.link = link
+        self.need_evaluate = need_evaluate
         self.text = ""
     
     def run(self):
@@ -500,8 +509,9 @@ class urpThread(QThread):
 
         up.offline_preprocess()
         up.login()
-        self.text = up.evaluation()
-        self.process.emit(self.text)
+        if self.need_evaluate:
+            self.text = up.evaluation()
+            self.process.emit(self.text)
         self.text = up.display_grades()
         self.process.emit(self.text)
         self.text = up.show_credit()
