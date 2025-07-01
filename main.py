@@ -1,4 +1,3 @@
-
 from sys import argv
 from os.path import exists
 from ddddocr import DdddOcr
@@ -97,42 +96,38 @@ class urp_tools:
             # print("{:\u3000<16}\t{:\u3000<5}\t{:\u3000<5}".format("课程名","学分","成绩"))
             text +=  "{:\u3000<16}\t{:\u3000<5}\t{:\u3000<5}\n".format("课程名","学分","成绩")
             # print("-----------")
-            text +=  "-----------\n"
+            text +=  "----------------------\n"
             for k in range(len(kc)):
                 for j in range(len(kc[k])):
                     text +=  "{:\u3000<17}\t{:\u3000<5}\t{:\u3000<5}\n".format(kc[k][j],xf[k][j],cj[k][j])
                     # print("{:\u3000<17}\t{:\u3000<5}\t{:\u3000<5}".format(kc[k][j],xf[k][j],cj[k][j]))
                 # print("-----------")
-                text +=  "-----------\n"
-        except:
+                text +=  "----------------------\n"
+        except: 
             print("查询失败,请重试或检查是否评估。")
-        else:
-            # self.show_credit()
-            # print("查询完毕。")
-            text +=  "查询完毕。\n"
-        
-        return text
+        return text.rstrip()
 
     
     def show_credit(self):
         
-        text = ""
-        self.driver.get(f"{self.link}/gradeLnAllAction.do?oper=queryXwjd")
-        ss = read_html(self.driver.page_source)[8][4:]     
-        xn,xw = ss['学年学期'].values, ss['学位绩'].values
-        # print("学年学期" + "\t"*7  + "学位绩")
-        for i in range(1,len(xn)):
-            text += str(xn[i]) + "\t"*3 + str(xw[i]) + "\n"
-            # print(str(xn[i]) + "\t"*3 + str(xw[i]))
+        text =  ""
 
-        # print("你已经很棒啦,要继续加油哦！！！")
-        text  += "你已经很棒啦,要继续加油哦！！！"
+        self.driver.get(f"{self.link}/gradeLnAllAction.do?oper=queryXfjd")
+        table = self.driver.find_elements(By.CLASS_NAME,"displayTag")[1]
+        text += "学年学期" + "\t"*2  + "学分绩点"  +  "\t" +  "学位绩点" + "\t" + "加权绩点" + "\n"
+        text +=  "----------------------\n"
+        tbody = table.find_element(By.TAG_NAME,"tbody")
+        trs = tbody.find_elements(By.TAG_NAME,"tr")
+        for tr in trs:
+            tds = tr.find_elements(By.TAG_NAME,"td")
+            text += str(tds[0].text[: -5]) + "\t" + "  "  + (str(tds[1].text) if len(str(tds[1].text)) == 4 else str(tds[1].text) + "0") + "\t"  + (str(tds[2].text) if len(str(tds[2].text)) == 4 else str(tds[2].text) + "0") + "\t"  + str(tds[3].text) + "\n"
 
+        text +=  "----------------------"
         self.driver.quit()
         return text
     def evaluation(self):
         
-        return_text = ''
+        return_text = '----------------------\n'
         self.driver.get(f"{self.link}jxpgXsAction.do?oper=listWj&yzxh={self.zh}")
         try:
             a = self.driver.find_elements(By.CLASS_NAME,"even")
@@ -148,7 +143,7 @@ class urp_tools:
                         n += 1
             if n == len(a) + len(b) and n != 0 :
                 # print("评估已完成。")
-                return_text += "评估已完成。\n"
+                return_text += "评估已完成。\n----------------------"
             else:
                 A = []
                 for i in range(0, int(len(a) + len(b)+1)):
@@ -411,7 +406,7 @@ class MainWindow(QMainWindow):
         self.urp_thread.process.connect(self.show_text)
         self.urp_thread.finished.connect(self.show_info)
     def show_text(self, text):
-        self.show_result.append(text)
+        self.show_result.append(text.strip())
 
     def show_info(self):
         self.setWindowTitle("查询完毕")
@@ -517,7 +512,7 @@ class urpThread(QThread):
         self.text = up.show_credit()
         self.process.emit(self.text)
         new_time = time()
-        self.process.emit("\n耗时：%.2f秒"%(new_time-now_time))
+        self.process.emit("查询完毕, 耗时：%.2f秒"%(new_time-now_time))
         self.finished.emit()
         
 
