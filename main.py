@@ -120,7 +120,7 @@ class urp_tools:
         trs = tbody.find_elements(By.TAG_NAME,"tr")
         for tr in trs:
             tds = tr.find_elements(By.TAG_NAME,"td")
-            text += str(tds[0].text[: -5]) + "\t" + "  "  + (str(tds[1].text) if len(str(tds[1].text)) == 4 else str(tds[1].text) + "0") + "\t"  + (str(tds[2].text) if len(str(tds[2].text)) == 4 else str(tds[2].text) + "0") + "\t"  + str(tds[3].text) + "\n"
+            text += str(tds[0].text[: -5]) + "\t" + "  "  + (str(tds[1].text) if len(str(tds[1].text)) == 4 else str(tds[1].text) + "0") + "\t" + "  " + (str(tds[2].text) if len(str(tds[2].text)) == 4 else str(tds[2].text) + "0") + "\t" + "  " + str(tds[3].text) + "\n"
 
         text +=  "----------------------"
         self.driver.quit()
