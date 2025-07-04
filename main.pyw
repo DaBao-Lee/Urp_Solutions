@@ -513,10 +513,8 @@ class urpThread(QThread):
             up = urp_tools(self.zh, self.mm, self.mode, self.link)
             up.offline_preprocess()
             result = up.login()
-            # self.process.emit()
-            if result == '':
-                self.text = up.evaluation()
-                self.process.emit(self.text)
+            self.text = up.evaluation()
+            self.process.emit(self.text)
         
         self.text = ''
         tmp_flag = 0
