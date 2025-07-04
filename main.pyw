@@ -184,7 +184,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("紫金URP查询助手")
         self.setGeometry(700, 350, 470, 300)
-        self.setWindowIcon(QIcon(r"./tool.png"))
+        self.setWindowIcon(QIcon(r"C:\Users\Administrator\Pictures\icon\high@3x.ico"))
         self.setStyleSheet("""
         QMainWindow {
          background-color: rgba(255, 255, 255, .9);   
@@ -522,6 +522,7 @@ class urpThread(QThread):
         tmp_flag = 0
         while True:
             try:
+                self.text = ''
                 self.text = self.get_credit()
                 break
             except:
