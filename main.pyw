@@ -1,4 +1,5 @@
 from sys import argv
+import requests, base64
 from os.path import exists
 from ddddocr import DdddOcr
 from time import sleep, time
@@ -9,7 +10,6 @@ from selenium.webdriver.common.by import By
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from selenium.webdriver.edge.options import Options
 from PyQt5.QtWidgets import QWidget, QMainWindow, QLabel, QAction, QApplication, QHBoxLayout, QLineEdit, QDialog, QVBoxLayout, QPushButton, QCheckBox, QMenuBar, QTextEdit, QComboBox
-import requests, base64
 
 class urp_tools:
     
@@ -53,7 +53,6 @@ class urp_tools:
             try:
                 if self.driver.find_element(By.CLASS_NAME,"errorTop").text == "你输入的验证码错误，请您重新输入！":
                     print("验证码识别错误，请重试")
-
                     sleep(1)
                     yzm = self.recognize_yzm()
                     self.driver.find_elements(By.CLASS_NAME,"input01")[0].send_keys(self.zh)
@@ -62,8 +61,9 @@ class urp_tools:
                     f"document.loginForm.v_yzm.value = '{yzm}';"
                     "document.getElementsByClassName('buttonImg')[0].click();"
                     )
+                else: break
             except: break
-        
+
     def offline_preprocess(self):
 
         self.driver.find_element(By.ID,"details-button").click()
@@ -512,17 +512,29 @@ class urpThread(QThread):
         if self.need_evaluate:
             up = urp_tools(self.zh, self.mm, self.mode, self.link)
             up.offline_preprocess()
-            up.login()
-            self.text = up.evaluation()
-            self.process.emit(self.text)
+            result = up.login()
+            # self.process.emit()
+            if result == '':
+                self.text = up.evaluation()
+                self.process.emit(self.text)
         
         self.text = ''
+        tmp_flag = 0
         while True:
             try:
                 self.text = self.get_credit()
                 break
-            except Exception as e:
-                print(e)
+            except:
+                tmp_flag += 1
+                self.text = ''
+                self.text += f"验证码输入错误,正在重新识别, 还剩{10 - tmp_flag}次机会...\n"
+                self.text += '-' * 20
+                self.text += '\n'
+                self.process.emit(self.text)
+                if tmp_flag == 10:
+                    self.text = ''
+                    self.text += '请检查账号密码是否正确？网页是否维护中...\n'
+                    break
 
         self.process.emit(self.text)
         new_time = time()
@@ -536,3 +548,4 @@ if __name__ == "__main__":
     window.show()
 
     app.exec()
+    
