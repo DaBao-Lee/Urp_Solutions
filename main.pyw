@@ -9,7 +9,8 @@ from selenium.webdriver.common.by import By
 from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from selenium.webdriver.edge.options import Options
 from PyQt5.QtWidgets import QWidget, QMainWindow, QLabel, QAction, QApplication, QHBoxLayout, QLineEdit, QDialog, QVBoxLayout, QPushButton, QCheckBox, QMenuBar, QTextEdit, QComboBox
- 
+import requests, base64
+
 class urp_tools:
     
     def __init__(self, zh, mm, mode="--headless", link="http://192.168.16.209/"):
@@ -80,51 +81,6 @@ class urp_tools:
         self.driver.get("https://223.112.21.198:6443/7b68f983/")
         sleep(0.5)
         self.driver.get("https://223.112.21.198:6443/7b68f983/")
-
-    def display_grades(self):
-        
-        text = ""
-        self.driver.get(f"{self.link}gradeLnAllAction.do?type=ln&oper=qbinfo&lnxndm=2023-2024学年秋(两学期)#qb_2023-2024学年秋(两学期)")
-        try:
-            dd = read_html(str(self.driver.page_source)) #4 10 16
-            kc,xf,cj = [], [], []
-            for i in range(4,len(dd),6):
-                kc.append(dd[i]['课程名'].values)
-                xf.append(dd[i]['学分'].values)
-                cj.append(dd[i]['成绩'].values)
-
-            # print("{:\u3000<16}\t{:\u3000<5}\t{:\u3000<5}".format("课程名","学分","成绩"))
-            text +=  "{:\u3000<16}\t{:\u3000<5}\t{:\u3000<5}\n".format("课程名","学分","成绩")
-            # print("-----------")
-            text +=  "----------------------\n"
-            for k in range(len(kc)):
-                for j in range(len(kc[k])):
-                    text +=  "{:\u3000<17}\t{:\u3000<5}\t{:\u3000<5}\n".format(kc[k][j],xf[k][j],cj[k][j])
-                    # print("{:\u3000<17}\t{:\u3000<5}\t{:\u3000<5}".format(kc[k][j],xf[k][j],cj[k][j]))
-                # print("-----------")
-                text +=  "----------------------\n"
-        except: 
-            print("查询失败,请重试或检查是否评估。")
-        return text.rstrip()
-
-    
-    def show_credit(self):
-        
-        text =  ""
-
-        self.driver.get(f"{self.link}/gradeLnAllAction.do?oper=queryXfjd")
-        table = self.driver.find_elements(By.CLASS_NAME,"displayTag")[1]
-        text += "学年学期" + "\t"*2  + "学分绩点"  +  "\t" +  "学位绩点" + "\t" + "加权绩点" + "\n"
-        text +=  "----------------------\n"
-        tbody = table.find_element(By.TAG_NAME,"tbody")
-        trs = tbody.find_elements(By.TAG_NAME,"tr")
-        for tr in trs:
-            tds = tr.find_elements(By.TAG_NAME,"td")
-            text += str(tds[0].text[: -5]) + "\t" + "  "  + (str(tds[1].text) if len(str(tds[1].text)) == 4 else str(tds[1].text) + "0") + "\t" + "  " + (str(tds[2].text) if len(str(tds[2].text)) == 4 else str(tds[2].text) + "0") + "\t" + "  " + str(tds[3].text) + "\n"
-
-        text +=  "----------------------"
-        self.driver.quit()
-        return text
     def evaluation(self):
         
         return_text = '----------------------\n'
@@ -180,7 +136,6 @@ class urp_tools:
         
         return return_text
 
-
 class SearchDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -229,7 +184,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("紫金URP查询助手")
         self.setGeometry(700, 350, 470, 300)
-        self.setWindowIcon(QIcon("tool.png"))
+        self.setWindowIcon(QIcon(r"C:\Users\Administrator\Pictures\icon\high@3x.ico"))
         self.setStyleSheet("""
         QMainWindow {
          background-color: rgba(255, 255, 255, .9);   
@@ -332,7 +287,7 @@ class MainWindow(QMainWindow):
         headless_layout.addWidget(self.headless_combobox)
 
         self.evaulate_button = QCheckBox("完成评估")
-        self.evaulate_button.setChecked(True)
+        self.evaulate_button.setChecked(False)
         headless_layout.addWidget(self.evaulate_button)
         
 
@@ -482,6 +437,7 @@ class searchThread(QThread):
         
         self.finished.emit(self.text)
 
+
 class urpThread(QThread):
     
     process = pyqtSignal(str)
@@ -497,27 +453,86 @@ class urpThread(QThread):
         self.need_evaluate = need_evaluate
         self.text = ""
     
+    def get_credit(self):
+        
+        session = requests.Session()
+        username = base64.b64encode("2215113116".encode()).decode()
+        password = base64.b64encode("Ldb20040716@".encode()).decode()
+
+        headers = {
+            'User-Agent': 'Mozilla/5.0',
+            'Referer': 'https://223.112.21.198:6443',
+        }
+        session.get(f"https://223.112.21.198:6443/vpn/user/auth/password?username={username}&password={password}&encode=1&rmbpwd_browser=0",
+                                headers=headers, verify=False)
+        session.get(f"https://223.112.21.198:6443/7b68f983/", headers=headers, verify=False)
+
+        login_url = "https://223.112.21.198:6443/7b68f983/loginAction.do"
+        vchart_link = "https://223.112.21.198:6443/7b68f983/validateCodeAction.do?"  # 示例路径，需根据实际页面调整
+        vchart_response = session.get(vchart_link, headers=headers, verify=False)
+        ocr = DdddOcr(show_ad=False, use_gpu=False)
+        result = ocr.classification(vchart_response.content)
+        payload = {
+            'zjh': f'{self.zh}',
+            'mm': f'{self.mm}',
+            'v_yzm': f'{result}',
+        }
+
+        session.post(login_url, data=payload, headers=headers, verify=False)
+        grades = session.get("https://223.112.21.198:6443/7b68f983/gradeLnAllAction.do?type=ln&oper=qbinfo", verify=False)
+        credits = session.get("https://223.112.21.198:6443/7b68f983/gradeLnAllAction.do?oper=queryXfjd", verify=False)
+
+        gradesTable = read_html(grades.text)   
+        creditsTable = read_html(credits.text)
+
+        # self.text +=  "----------------------\n"
+        self.text += "{:\u3000<16}\t{:\u3000<5}\t{:\u3000<5}\n".format("课程名","学分","成绩")
+
+        for index in range(10, len(gradesTable), 6):
+            self.text +=  "----------------------\n"
+            tmp_frame = gradesTable[index].iloc[:, [2, 4, 5, 7]]
+            tmp_frame.columns = ['课程名', '学分', '课程属性', '成绩']  # 给列命名（你可改成你自己喜欢的顺序）
+
+            for i, row in tmp_frame.iterrows():
+               self.text += "{:\u3000<17}\t{:\u3000<5}\t{:\u3000<5}\n".format(row['课程名'], row['学分'] if len(str(row['学分'])) == 3 else str(row['学分']) + ".0", row['成绩'])
+                
+        self.text +=  "----------------------\n"
+        self.text += "{:\u3000<11}\t{:\u3000<5}\t{:\u3000<5}\t{:\u3000<5}\n".format("学年学期","学分绩点","学位绩点", "加权")
+        self.text +=  "----------------------\n"
+        for i, row in creditsTable[11].iterrows():
+            self.text += "{:\u3000<16}\t{:\u3000<5}\t{:\u3000<5}\t{:\u3000<5}\n".format(row['学年学期'], row['学分绩点'], row['学位绩点'], row['加权学分学位绩点'])
+        self.text +=  "----------------------\n"
+
+        return self.text
+
     def run(self):
 
         now_time = time()
-        up = urp_tools(self.zh, self.mm, self.mode, self.link)
-
-        up.offline_preprocess()
-        up.login()
+        
         if self.need_evaluate:
+            up = urp_tools(self.zh, self.mm, self.mode, self.link)
+            up.offline_preprocess()
+            up.login()
             self.text = up.evaluation()
             self.process.emit(self.text)
-        self.text = up.display_grades()
-        self.process.emit(self.text)
-        self.text = up.show_credit()
+        
+        self.text = ''
+        while True:
+            try:
+                self.text = self.get_credit()
+                break
+            except Exception as e:
+                print(e)
+
         self.process.emit(self.text)
         new_time = time()
         self.process.emit("查询完毕, 耗时：%.2f秒"%(new_time-now_time))
         self.finished.emit()
-        
 
-app = QApplication(argv)
-window = MainWindow()
-window.show()
+if __name__ == "__main__":
+    
+    app = QApplication(argv)
+    window = MainWindow()
+    window.show()
 
-app.exec()
+    app.exec()
