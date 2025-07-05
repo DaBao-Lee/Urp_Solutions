@@ -83,12 +83,12 @@ class urp_tools:
         self.driver.get("https://223.112.21.198:6443/7b68f983/")
     def evaluation(self):
         
-        return_text = '----------------------\n'
-        self.driver.get(f"{self.link}jxpgXsAction.do?oper=listWj&yzxh={self.zh}")
+        return_text = '--------------------------------------------\n'
+        self.driver.get(f"{self.link}/jxpgXsAction.do?oper=listWj&yzxh={self.zh}")
         try:
             a = self.driver.find_elements(By.CLASS_NAME,"even")
             b = self.driver.find_elements(By.CLASS_NAME,"odd")
-            return_text += f"一共需要评估{len(a + b)}门课\n"
+            return_text += f"📚 一共需要评估{len(a + b)}门课\n"
             n = 0
             for i in range(len(a) + len(b)):
                 if len(b) > 0:
@@ -99,7 +99,7 @@ class urp_tools:
                         n += 1
             if n == len(a) + len(b) and n != 0 :
                 # print("评估已完成。")
-                return_text += "评估已完成。\n----------------------"
+                return_text += "🎓 评估已完成，干得漂亮！\n--------------------------------------------"
             else:
                 A = []
                 for i in range(0, int(len(a) + len(b)+1)):
@@ -134,6 +134,7 @@ class urp_tools:
             print(e)
             print("评估失败，请重试。")
         
+        self.driver.quit()
         return return_text
 
 class SearchDialog(QDialog):
@@ -184,7 +185,7 @@ class MainWindow(QMainWindow):
 
         self.setWindowTitle("紫金URP查询助手")
         self.setGeometry(700, 350, 470, 300)
-        self.setWindowIcon(QIcon(r"./tool.png"))
+        self.setWindowIcon(QIcon(r"C:\Users\Administrator\Pictures\icon\high@3x.ico"))
         self.setStyleSheet("""
         QMainWindow {
          background-color: rgba(255, 255, 255, .9);   
@@ -197,11 +198,11 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(content)
 
         self.menu_bar = QMenuBar()
-        find_people_menu = self.menu_bar.addMenu("更多功能")
-        action1 = QAction("获取所有人姓名", self)
-        action2 = QAction("获取指定人所有信息", self)
-        action3 = QAction("清空", self)
-        action4 = QAction("退出", self)
+        find_people_menu = self.menu_bar.addMenu("👀更多功能")
+        action1 = QAction("❤获取所有人姓名", self)
+        action2 = QAction("🧑‍🤝‍🧑获取指定人所有信息", self)
+        action3 = QAction("🚮清空", self)
+        action4 = QAction("🚪 退出", self)
 
         find_people_menu.addAction(action1)
         action1.triggered.connect(self.get_all_name)
@@ -212,7 +213,7 @@ class MainWindow(QMainWindow):
         find_people_menu.addAction(action4)
         action4.triggered.connect(self.close)
 
-        custom_peole_menu = self.menu_bar.addMenu("常查询人员")
+        custom_peole_menu = self.menu_bar.addMenu("🧑常查询人员")
         people1  = QAction("曾政", self)
         people2  = QAction("张嘉奇", self)
         people3  = QAction("温炳兴", self)
@@ -286,10 +287,13 @@ class MainWindow(QMainWindow):
         self.headless_combobox.addItem("有头模式")
         headless_layout.addWidget(self.headless_combobox)
 
+        self.innerNet_button = QCheckBox("内网登录")
+        self.innerNet_button.setChecked(True)
+        headless_layout.addWidget(self.innerNet_button)
+
         self.evaulate_button = QCheckBox("完成评估")
         self.evaulate_button.setChecked(False)
         headless_layout.addWidget(self.evaulate_button)
-        
 
         self.login_button = QPushButton("一键查询")
         self.login_button.setStyleSheet("""
@@ -306,7 +310,7 @@ class MainWindow(QMainWindow):
         self.left_layout.addWidget(self.login_button)
 
         
-        self.show_tips = QLabel("处理结果显示在这里...")
+        self.show_tips = QLabel("📋处理结果显示在这里...")
         self.show_tips.setStyleSheet("font-size: 16px; font-family: '华文中宋';")
         self.left_layout.addSpacing(5)
         self.left_layout.addWidget(self.show_tips)
@@ -334,14 +338,14 @@ class MainWindow(QMainWindow):
         
         if self.username_input.text() == "":
             self.show_result.clear()
-            self.show_result.append("请输入用户名")
+            self.show_result.append("👤 请输入用户名")
             return
         elif self.password_input.text() == "":
             self.show_result.clear()
-            self.show_result.append("请输入密码")
+            self.show_result.append("🔒 请输入密码")
             return
         
-        self.show_result.setText("开始执行...")
+        self.show_result.setText("🚀 开始执行任务... ")
         self.setWindowTitle("查询中...")
         self.login_button.setDisabled(True)
 
@@ -351,10 +355,12 @@ class MainWindow(QMainWindow):
 
         need_evaluate = True if self.evaulate_button.isChecked() else False
 
+        innerMode = True if self.innerNet_button.isChecked() else False
+
         if self.headless_combobox.currentText() == "无头模式":
-            self.urp_thread = urpThread(self.username_input.text(), self.password_input.text(),mode="--headless",link="https://223.112.21.198:6443/7b68f983/", need_evaluate=need_evaluate)
+            self.urp_thread = urpThread(self.username_input.text(), self.password_input.text(),mode="--headless",link="https://223.112.21.198:6443/7b68f983/", innerMode=innerMode, need_evaluate=need_evaluate)
         else:
-            self.urp_thread = urpThread(self.username_input.text(), self.password_input.text(),mode="",link="https://223.112.21.198:6443/7b68f983/", need_evaluate=need_evaluate)
+            self.urp_thread = urpThread(self.username_input.text(), self.password_input.text(),mode="",link="https://223.112.21.198:6443/7b68f983/", innerMode=innerMode, need_evaluate=need_evaluate)
             self.show_result.append("可视化查询过程...")
         self.urp_thread.start()
 
@@ -443,15 +449,21 @@ class urpThread(QThread):
     process = pyqtSignal(str)
     finished = pyqtSignal()
 
-    def __init__(self, zh, mm, mode, link, need_evaluate=True):
+    def __init__(self, zh, mm, mode, link, innerMode=True, need_evaluate=True):
         super().__init__()
 
         self.zh = zh
         self.mm = mm
         self.mode = mode
         self.link = link
+        self.innerMode = innerMode
         self.need_evaluate = need_evaluate
         self.text = ""
+
+        if self.innerMode:
+            self.link = "http://192.168.16.207"
+        else:
+            self.link = "https://223.112.21.198:6443"
     
     def get_credit(self):
         
@@ -461,47 +473,65 @@ class urpThread(QThread):
 
         headers = {
             'User-Agent': 'Mozilla/5.0',
-            'Referer': 'https://223.112.21.198:6443',
-        }
-        session.get(f"https://223.112.21.198:6443/vpn/user/auth/password?username={username}&password={password}&encode=1&rmbpwd_browser=0",
-                                headers=headers, verify=False)
-        session.get(f"https://223.112.21.198:6443/7b68f983/", headers=headers, verify=False)
-
-        login_url = "https://223.112.21.198:6443/7b68f983/loginAction.do"
-        vchart_link = "https://223.112.21.198:6443/7b68f983/validateCodeAction.do?"  # 示例路径，需根据实际页面调整
-        vchart_response = session.get(vchart_link, headers=headers, verify=False)
-        ocr = DdddOcr(show_ad=False, use_gpu=False)
-        result = ocr.classification(vchart_response.content)
-        payload = {
-            'zjh': f'{self.zh}',
-            'mm': f'{self.mm}',
-            'v_yzm': f'{result}',
+            'Referer': f'{self.link}',
         }
 
-        session.post(login_url, data=payload, headers=headers, verify=False)
-        grades = session.get("https://223.112.21.198:6443/7b68f983/gradeLnAllAction.do?type=ln&oper=qbinfo", verify=False)
-        credits = session.get("https://223.112.21.198:6443/7b68f983/gradeLnAllAction.do?oper=queryXfjd", verify=False)
+        if not self.innerMode:
+            session.get(f"https://223.112.21.198:6443/vpn/user/auth/password?username={username}&password={password}&encode=1&rmbpwd_browser=0",
+                                    headers=headers, verify=False)
+            session.get(f"https://223.112.21.198:6443/7b68f983/", headers=headers, verify=False)
 
+            login_url = "https://223.112.21.198:6443/7b68f983/loginAction.do"
+            vchart_link = "https://223.112.21.198:6443/7b68f983/validateCodeAction.do?"  # 示例路径，需根据实际页面调整
+            vchart_response = session.get(vchart_link, headers=headers, verify=False)
+            ocr = DdddOcr(show_ad=False, use_gpu=False)
+            result = ocr.classification(vchart_response.content)
+            payload = {
+                'zjh': f'{self.zh}',
+                'mm': f'{self.mm}',
+                'v_yzm': f'{result}',
+            }
+
+            session.post(login_url, data=payload, headers=headers, verify=False)
+            grades = session.get("http://192.168.16.207/gradeLnAllAction.do?type=ln&oper=qbinfo", verify=False)
+            credits = session.get("http://192.168.16.207/gradeLnAllAction.do?oper=queryXfjd", verify=False)
+        else:
+            login_url = "http://192.168.16.207/loginAction.do"
+            vchart_link = "http://192.168.16.207/validateCodeAction.do?"  # 示例路径，需根据实际页面调整
+            vchart_response = session.get(vchart_link, headers=headers, verify=False)
+            ocr = DdddOcr(show_ad=False, use_gpu=False)
+            result = ocr.classification(vchart_response.content)
+            payload = {
+                'zjh': f'{self.zh}',
+                'mm': f'{self.mm}',
+                'v_yzm': f'{result}',
+            }
+
+            session.post(login_url, data=payload, headers=headers, verify=False)
+            grades = session.get("http://192.168.16.207/gradeLnAllAction.do?type=ln&oper=qbinfo", verify=False)
+            credits = session.get("http://192.168.16.207/gradeLnAllAction.do?oper=queryXfjd", verify=False)
+        
         gradesTable = read_html(grades.text)   
         creditsTable = read_html(credits.text)
 
-        # self.text +=  "----------------------\n"
-        self.text += "{:\u3000<16}\t{:\u3000<5}\t{:\u3000<5}\n".format("课程名","学分","成绩")
+        # self.text +=  "--------------------------------------------\n"
+        self.text += "{:\u3000<19}\t\t{:\u3000<5}\t{:\u3000<5}\n".format("课程名","学分","成绩")
 
         for index in range(10, len(gradesTable), 6):
-            self.text +=  "----------------------\n"
+            self.text +=  "--------------------------------------------\n"
             tmp_frame = gradesTable[index].iloc[:, [2, 4, 5, 7]]
             tmp_frame.columns = ['课程名', '学分', '课程属性', '成绩']  # 给列命名（你可改成你自己喜欢的顺序）
 
             for i, row in tmp_frame.iterrows():
-               self.text += "{:\u3000<17}\t{:\u3000<5}\t{:\u3000<5}\n".format(row['课程名'], row['学分'] if len(str(row['学分'])) == 3 else str(row['学分']) + ".0", row['成绩'])
+               self.text += "{:\u3000<19}\t\t{:\u3000<5}\t{:\u3000<5}\n".format(row['课程名'], row['学分'] if len(str(row['学分'])) == 3 else str(row['学分']) + ".0", row['成绩'])
                 
-        self.text +=  "----------------------\n"
-        self.text += "{:\u3000<11}\t{:\u3000<5}\t{:\u3000<5}\t{:\u3000<5}\n".format("学年学期","学分绩点","学位绩点", "加权")
-        self.text +=  "----------------------\n"
+        self.text +=  "--------------------------------------------\n"
+        self.text += "{:\u3000<19}\t{:\u3000<5}\t{:\u3000<5}\t{:\u3000<5}\n".format("学年学期","学分绩点","学位绩点", "加权总分")
+        self.text +=  "--------------------------------------------\n"
         for i, row in creditsTable[11].iterrows():
-            self.text += "{:\u3000<16}\t{:\u3000<5}\t{:\u3000<5}\t{:\u3000<5}\n".format(row['学年学期'], row['学分绩点'], row['学位绩点'], row['加权学分学位绩点'])
-        self.text +=  "----------------------\n"
+            self.text += "{:\u3000<19}\t\t{:\u3000<5}\t{:\u3000<5}\t{:\u3000<5}\n".format(row['学年学期'], row['学分绩点'] if len(str(row['学分绩点'])) == 4 else str(row['学分绩点']) + "0", row['学位绩点'] if len(str(row['学位绩点'])) == 4 else str(row['学位绩点']) + "0",
+                                                row['加权学分学位绩点'] if len(str(row['加权学分学位绩点'])) == 5 else str(row['加权学分学位绩点']) + "0")
+        self.text +=  "--------------------------------------------\n"
 
         return self.text
 
@@ -511,8 +541,9 @@ class urpThread(QThread):
         
         if self.need_evaluate:
             up = urp_tools(self.zh, self.mm, self.mode, self.link)
-            up.offline_preprocess()
-            result = up.login()
+            if self.link == 'https://223.112.21.198:6443':
+                up.offline_preprocess()
+            up.login()
             self.text = up.evaluation()
             self.process.emit(self.text)
         
@@ -537,7 +568,7 @@ class urpThread(QThread):
 
         self.process.emit(self.text)
         new_time = time()
-        self.process.emit("查询完毕, 耗时：%.2f秒"%(new_time-now_time))
+        self.process.emit("✅查询完毕,  🎉耗时：%.2f秒"%(new_time-now_time))
         self.finished.emit()
 
 if __name__ == "__main__":
